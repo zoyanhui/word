@@ -20,10 +20,14 @@
 
 package org.apdplat.word.segmentation;
 
+import com.google.common.collect.Lists;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,10 +48,16 @@ public class SegmentationContrast {
         System.out.println("***************************************************");
         System.out.println("切分效果对比：");
         System.out.println("***************************************************");
-        map.keySet().stream().sorted().forEach(sa -> System.out.println(sa + " : " + map.get(sa)));
+        ArrayList<String> sas = Lists.newArrayList(map.keySet());
+        Collections.sort(sas);
+        for (String sa : sas) {
+            System.out.println(sa + " : " + map.get(sa));
+        }
+//        map.keySet().stream().sorted().forEach(sa -> System.out.println(sa + " : " + map.get(sa)));
         System.out.println("***************************************************");
     }
     public static void run(String encoding) {
+
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, encoding))){
             String line = null;
             while((line = reader.readLine()) != null){

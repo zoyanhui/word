@@ -21,16 +21,17 @@
 package org.apdplat.word.dictionary.impl;
 
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import org.apdplat.word.dictionary.Dictionary;
 import org.apdplat.word.util.WordConfTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * 双数组前缀树的Java实现
@@ -104,7 +105,10 @@ public class DoubleArrayDictionaryTrie implements Dictionary{
                 if (words.size()<10) {
                     LOGGER.debug("************************************************");
                     LOGGER.debug("树信息：");
-                    siblings.forEach(s -> LOGGER.debug(s.toString()));
+                    for (Node sibling : siblings) {
+                        LOGGER.debug(sibling.toString());
+                    }
+//                    siblings.forEach(s -> LOGGER.debug(s.toString()));
                     LOGGER.debug("************************************************");
                 }
             }
@@ -252,24 +256,45 @@ public class DoubleArrayDictionaryTrie implements Dictionary{
         if(check!=null){
             throw new RuntimeException("addAll method can just be used once after clear method!");
         }
-
-        items=items
-                .stream()
-                .map(item -> item.trim())
-                .filter(item -> {
-                    //统计最大词长
-                    int len = item.length();
-                    if(len > maxLength.get()){
-                        maxLength.set(len);
-                    }
-                    return len > 0;
-                })
-                .sorted()
-                .collect(Collectors.toList());
+        Iterable<String> transform = Iterables.transform(items, new Function<String, String>() {
+            @Override
+            public String apply(String item) {
+                return item.trim();
+            }
+        });
+        Iterable<String> filter = Iterables.filter(transform, new Predicate<String>() {
+            @Override
+            public boolean apply(String item) {
+                //统计最大词长
+                int len = item.length();
+                if (len > maxLength.get()) {
+                    maxLength.set(len);
+                }
+                return len > 0;
+            }
+        });
+        items = Lists.newArrayList(filter);
+        Collections.sort(items);
+//        items=items
+//                .stream()
+//                .map(item -> item.trim())
+//                .filter(item -> {
+//                    //统计最大词长
+//                    int len = item.length();
+//                    if(len > maxLength.get()){
+//                        maxLength.set(len);
+//                    }
+//                    return len > 0;
+//                })
+//                .sorted()
+//                .collect(Collectors.toList());
         if(LOGGER.isDebugEnabled()){
             //for debug
             if (items.size()<10){
-                items.forEach(item->LOGGER.debug(item));
+//                items.forEach(item->LOGGER.debug(item));
+                for (String item : items) {
+                    LOGGER.debug(item);
+                }
             }
         }
         init(items);

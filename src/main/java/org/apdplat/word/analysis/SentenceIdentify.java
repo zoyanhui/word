@@ -1,5 +1,6 @@
 package org.apdplat.word.analysis;
 
+import com.google.common.collect.Lists;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.corpus.Bigram;
 import org.apdplat.word.segmentation.Word;
@@ -11,13 +12,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * 判定句子是有意义的人话的可能性
@@ -32,27 +29,31 @@ import java.util.stream.Collectors;
 public class SentenceIdentify {
     private static final Logger LOGGER = LoggerFactory.getLogger(SentenceIdentify.class);
     private static final List<String> WORDS = new ArrayList<>();
+
     static {
         try {
-            Utils.readResource("/dic.txt").forEach(WORDS::add);
-        }catch (Exception e){
+//            Utils.readResource("/dic.txt").forEach(WORDS::add);
+            for (String s : Utils.readResource("/dic.txt")) {
+                WORDS.add(s);
+            }
+        } catch (Exception e) {
             LOGGER.error("load words failed", e);
         }
     }
 
-    public static float identify(String sentence){
+    public static float identify(String sentence) {
         List<Word> words = WordSegmenter.segWithStopWords(sentence);
-        System.out.println("随机单词: "+words);
-        System.out.println("生成句子: "+sentence);
+        System.out.println("随机单词: " + words);
+        System.out.println("生成句子: " + sentence);
         return Bigram.sentenceScore(words);
     }
 
-    public static List<String> generateRandomSentences(int count){
+    public static List<String> generateRandomSentences(int count) {
         List<String> sentences = new ArrayList<>();
-        for(int i=0; i<count; i++){
+        for (int i = 0; i < count; i++) {
             StringBuilder sentence = new StringBuilder();
-            int len = new Random(System.nanoTime()).nextInt(5)+5;
-            for(int j=0; j<len; j++){
+            int len = new Random(System.nanoTime()).nextInt(5) + 5;
+            for (int j = 0; j < len; j++) {
                 sentence.append(WORDS.get(new Random(System.nanoTime()).nextInt(WORDS.size())));
             }
             sentences.add(sentence.toString());
@@ -62,15 +63,15 @@ public class SentenceIdentify {
     }
 
     private static void run(String encoding) {
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, encoding))){
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, encoding))) {
             String line = null;
-            while((line = reader.readLine()) != null){
-                if("exit".equals(line)){
+            while ((line = reader.readLine()) != null) {
+                if ("exit".equals(line)) {
                     System.exit(0);
                     LOGGER.info("退出");
                     return;
                 }
-                if(line.trim().equals("")){
+                if (line.trim().equals("")) {
                     continue;
                 }
                 processSentence(line.split(" "));
@@ -90,18 +91,30 @@ public class SentenceIdentify {
     }
 
     private static void processSentence(String[] args) {
-        for (String item : args){
+        for (String item : args) {
             System.out.println("句子概率: " + identify(item));
         }
     }
 
-    public static List<Map.Entry<String, Float>> evaluation(List<String> sentences){
+    public static List<Map.Entry<String, Float>> evaluation(List<String> sentences) {
         Map<String, Float> map = new ConcurrentHashMap<>();
-        sentences.parallelStream().forEach(sentence -> {
+//        sentences.parallelStream().forEach(sentence -> {
+//            float score = identify(sentence);
+//            map.put(sentence, score);
+//        });
+        for (String sentence : sentences) {
             float score = identify(sentence);
             map.put(sentence, score);
+        }
+        ArrayList<Map.Entry<String, Float>> entries = Lists.newArrayList(map.entrySet());
+        Collections.sort(entries, new Comparator<Map.Entry<String, Float>>() {
+            @Override
+            public int compare(Map.Entry<String, Float> a, Map.Entry<String, Float> b) {
+                return b.getValue().compareTo(a.getValue());
+            }
         });
-        return map.entrySet().stream().sorted((a,b)->b.getValue().compareTo(a.getValue())).collect(Collectors.toList());
+        return entries;
+//        return map.entrySet().stream().sorted((a,b)->b.getValue().compareTo(a.getValue())).collect(Collectors.toList());
     }
 
     public static void main(String[] args) {
@@ -114,17 +127,20 @@ public class SentenceIdentify {
         list.add("天我滑去人够");
         list.addAll(generateRandomSentences(94));
         AtomicInteger i = new AtomicInteger();
-        evaluation(list).forEach(entry->{
+        for (Map.Entry<String, Float> entry : evaluation(list)) {
             System.out.println(i.incrementAndGet() + ". 句子: " + entry.getKey() + ", 概率: " + entry.getValue());
-        });
+        }
+//        evaluation(list).forEach(entry->{
+//            System.out.println(i.incrementAndGet() + ". 句子: " + entry.getKey() + ", 概率: " + entry.getValue());
+//        });
         String encoding = "utf-8";
-        if(args==null || args.length == 0){
+        if (args == null || args.length == 0) {
             showUsage();
             run(encoding);
-        }else if(Charset.isSupported(args[0])){
+        } else if (Charset.isSupported(args[0])) {
             showUsage();
             run(args[0]);
-        }else{
+        } else {
             processSentence(args);
             //非交互模式，退出JVM
             System.exit(0);

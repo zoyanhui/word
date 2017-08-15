@@ -67,7 +67,10 @@ public class MaxNgramScore extends AbstractSegmentation{
             for(int i=0; i<textLen; i++){
                 list.add(i);
             }
-            list.parallelStream().forEach(i->dag[i+1] = fullSeg(text, i));
+            for (Integer i : list) {
+                dag[i+1] = fullSeg(text, i);
+            }
+//            list.parallelStream().forEach(i->dag[i+1] = fullSeg(text, i));
         }else {
             //串行化
             for (int i = 0; i < textLen; i++) {

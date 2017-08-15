@@ -148,7 +148,10 @@ public class AntonymTagging {
             LOGGER.debug("对分词结果进行反义标注之前：{}", words);
         }
         //反义并行标注
-        words.parallelStream().forEach(word -> process(word));
+        for (Word word : words) {
+            process(word);
+        }
+//        words.parallelStream().forEach(word -> process(word));
         if(LOGGER.isDebugEnabled()) {
             LOGGER.debug("对分词结果进行反义标注之后：{}", words);
         }
